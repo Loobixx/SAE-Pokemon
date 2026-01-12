@@ -1,9 +1,19 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
+const app = document.querySelector('#app')
 
-const app = createApp(App)
+app.innerHTML = `
+  <h1>Test connexion Front ↔ Back</h1>
+  <button id="btn">Tester la connexion</button>
+  <p id="result">En attente...</p>
+`
 
-app.use(router)
-
-app.mount('#app')
+document.querySelector('#btn').addEventListener('click', async () => {
+  try {
+    const response = await fetch('http://localhost:8080/api/test')
+    const data = await response.text()
+    document.querySelector('#result').textContent = data
+  } catch (error) {
+    document.querySelector('#result').textContent =
+      '❌ Erreur de connexion au backend'
+    console.error(error)
+  }
+})
