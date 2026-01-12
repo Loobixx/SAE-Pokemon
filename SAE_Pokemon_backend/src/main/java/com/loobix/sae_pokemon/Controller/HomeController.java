@@ -1,4 +1,4 @@
-package com.loobix.sae_pokemon.Controller;
+package com.loobix.sae_pokemon.controller;
 
 
 import org.springframework.stereotype.Controller;
