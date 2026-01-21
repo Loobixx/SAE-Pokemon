@@ -1,0 +1,51 @@
+package com.loobix.sae_pokemon.config;
+
+import com.loobix.sae_pokemon.model.User;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import java.util.Collection;
+import java.util.List;
+
+public class UserDetailsImpl implements UserDetails {
+    private String email;
+    private String password;
+    private String pseudo;
+
+    public UserDetailsImpl(String email, String password, String pseudo) {
+        this.email = email;
+        this.password = password;
+        this.pseudo = pseudo;
+    }
+
+    public static UserDetailsImpl build(User user) {
+        return new UserDetailsImpl(
+                user.getEmail(),
+                user.getPassword(),
+                user.getPseudo());
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(); // Tu pourras ajouter des rôles ici plus tard
+    }
+
+    public String getPseudo() { return pseudo; }
+
+    @Override
+    public String getPassword() { return password; }
+
+    @Override
+    public String getUsername() { return email; } // L'email sert d'identifiant
+
+    @Override
+    public boolean isAccountNonExpired() { return true; }
+
+    @Override
+    public boolean isAccountNonLocked() { return true; }
+
+    @Override
+    public boolean isCredentialsNonExpired() { return true; }
+
+    @Override
+    public boolean isEnabled() { return true; }
+}

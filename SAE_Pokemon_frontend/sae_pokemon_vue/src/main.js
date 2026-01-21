@@ -1,19 +1,30 @@
-const app = document.querySelector('#app')
+import router from './router'
+import { createApp } from 'vue'
+import App from './App.vue'
 
-app.innerHTML = `
-  <h1>Test connexion Front ↔ Back</h1>
-  <button id="btn">Tester la connexion</button>
-  <p id="result">En attente...</p>
-`
+// Vuetify
+import 'vuetify/styles'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+import { aliases, mdi } from 'vuetify/iconsets/mdi'
+import '@mdi/font/css/materialdesignicons.css'
 
-document.querySelector('#btn').addEventListener('click', async () => {
-  try {
-    const response = await fetch('http://localhost:8080/api/test')
-    const data = await response.text()
-    document.querySelector('#result').textContent = data
-  } catch (error) {
-    document.querySelector('#result').textContent =
-      '❌ Erreur de connexion au backend'
-    console.error(error)
-  }
+
+const vuetify = createVuetify({
+  components,
+  directives,
+  icons: {
+    defaultSet: 'mdi',
+    aliases,
+    sets: { mdi },
+  },
 })
+
+
+
+const app = createApp(App)
+
+app.use(router)
+app.use(vuetify)
+app.mount('#app')
