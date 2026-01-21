@@ -6,5 +6,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PokemonRepository extends JpaRepository<Pokemon, Long> {
-    // Rien à ajouter, Spring fait la magie !
 }

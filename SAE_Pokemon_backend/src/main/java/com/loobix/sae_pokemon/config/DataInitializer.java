@@ -13,82 +13,151 @@ public class DataInitializer implements CommandLineRunner {
 
     private final PokemonRepository repository;
     private final RestTemplate restTemplate;
+    private final ObjectMapper mapper;
 
     public DataInitializer(PokemonRepository repository) {
         this.repository = repository;
         this.restTemplate = new RestTemplate();
+        this.mapper = new ObjectMapper();
     }
 
     @Override
     public void run(String... args) throws Exception {
-        long count = repository.count();
-        if (count == 0) {
-            System.out.println("⚡ Base vide. Récupération des données et des images Shiny...");
-            importerLesPokemons();
+        if (repository.count() == 0) {
+            System.out.println("⚡ Base vide. Démarrage de l'importation (Normal + Shiny)...");
+            importerLesDoublons();
         } else {
-            System.out.println("✅ Base déjà remplie (" + count + " Pokémons).");
+            System.out.println("✅ Base déjà remplie. Pas d'import nécessaire.");
         }
     }
 
-    private void importerLesPokemons() {
-        String apiUrl = "https://pokeapi.co/api/v2/pokemon?limit=151";
+    private void importerLesDoublons() {
+        // On commence par la première page (20 par défaut, ou plus si tu veux)
+        String nextUrl = "https://pokeapi.co/api/v2/pokemon?limit=100";
 
         try {
-            String jsonResponse = restTemplate.getForObject(apiUrl, String.class);
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(jsonResponse);
-            JsonNode results = root.path("results");
+            while (nextUrl != null && !nextUrl.equals("null")) {
+                System.out.println("🌐 Récupération de la page : " + nextUrl);
+                String jsonResponse = restTemplate.getForObject(nextUrl, String.class);
+                JsonNode root = mapper.readTree(jsonResponse);
 
-            for (JsonNode node : results) {
-                String name = node.path("name").asText();
-                String urlDetail = node.path("url").asText();
+                // On met à jour l'URL de la page suivante pour la prochaine itération
+                nextUrl = root.path("next").asText();
 
-                // Récupération de l'ID
-                String[] segments = urlDetail.split("/");
-                Long id = Long.parseLong(segments[segments.length - 1]);
+                JsonNode results = root.path("results");
+                for (JsonNode node : results) {
+                    String urlDetail = node.path("url").asText();
 
-                // --- Appel API Détail pour avoir les images exactes ---
-                PokemonDetails details = recupererDetails(urlDetail);
+                    // Ton code de traitement reste le même
+                    PokemonDetails details = recupererDetails(urlDetail);
 
-                // Création avec les DEUX images
-                Pokemon p = new Pokemon(id, name, details.type, details.imageNormal, details.imageShiny);
+                    // On ignore les formes spéciales (ID > 10000) si tu ne veux que les vrais Pokémon
+                    if (details.id > 10000) continue;
 
-                repository.save(p);
-                System.out.println("--> Sauvegardé : " + name + " (Normal + Shiny)");
+                    String description = recupererDescription(details.id);
+                    String nameFR = recupererNomFR(details.id);
+
+                    // Sauvegarde Normal
+                    Pokemon p = new Pokemon();
+                    p.setNumero(details.id.intValue());
+                    p.setName(nameFR);
+                    p.setType(details.type);
+                    p.setShiny(false);
+                    p.setImageUrl(details.imageNormal);
+                    p.setDescription(description);
+
+                    repository.save(p);
+                    // Sauvegarde Shiny
+                    Pokemon p_shiny = new Pokemon();
+                    p_shiny.setNumero(details.id.intValue());
+                    p_shiny.setName(nameFR);
+                    p_shiny.setType(details.type);
+                    p_shiny.setShiny(true);
+                    p_shiny.setImageUrl(details.imageShiny);
+                    p_shiny.setDescription(description);
+
+                    repository.save(p_shiny);
+
+                    System.out.println("--> Importé : " + nameFR + " (#" + details.id + ")");
+                }
             }
-            System.out.println("🎉 Importation terminée !");
+            System.out.println("🎉 Tous les Pokémon ont été importés !");
 
         } catch (Exception e) {
+            System.err.println("❌ Erreur lors de l'import : " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    // Petite classe interne pour transporter les infos temporairement
-    private record PokemonDetails(String type, String imageNormal, String imageShiny) {}
+    // --- CLASSES ET MÉTHODES UTILITAIRES ---
 
-    private PokemonDetails recupererDetails(String urlDetail) {
+    private record PokemonDetails(Long id, String type, String imageNormal, String imageShiny) {}
+
+    private PokemonDetails recupererDetails(String url) {
         try {
-            // On appelle l'URL spécifique du Pokémon (ex: .../pokemon/1/)
-            String json = restTemplate.getForObject(urlDetail, String.class);
-            JsonNode root = new ObjectMapper().readTree(json);
+            String json = restTemplate.getForObject(url, String.class);
+            JsonNode root = mapper.readTree(json);
 
-            // 1. Le Type
+            Long id = root.path("id").asLong();
+
+            // Récupération du premier type
             String type = root.path("types").get(0).path("type").path("name").asText();
 
-            // 2. Image Normale (Official Artwork HD)
+            // Images Officielles
             String normal = root.path("sprites").path("other").path("official-artwork").path("front_default").asText();
-
-            // 3. Image Shiny (Official Artwork Shiny)
             String shiny = root.path("sprites").path("other").path("official-artwork").path("front_shiny").asText();
-            System.out.println(shiny);
-            // Fallback : Si l'artwork shiny n'existe pas, on prend le sprite pixel art classique
-            if (shiny == null || shiny.equals("null") || shiny.isEmpty()) {
+
+            if (shiny == null || shiny.isEmpty() || shiny.equals("null")) {
                 shiny = root.path("sprites").path("front_shiny").asText();
             }
 
-            return new PokemonDetails(type, normal, shiny);
+            return new PokemonDetails(id, type, normal, shiny);
         } catch (Exception e) {
-            return new PokemonDetails("normal", "", "");
+            return new PokemonDetails(0L, "inconnu", "", "");
         }
+    }
+
+    private String recupererNomFR(Long id) {
+        try {
+            String speciesUrl = "https://pokeapi.co/api/v2/pokemon-species/" + id;
+            String json = restTemplate.getForObject(speciesUrl, String.class);
+            JsonNode root = mapper.readTree(json);
+            JsonNode names = root.path("names");
+
+            for (JsonNode entry : names) {
+                if (entry.path("language").path("name").asText().equals("fr")) {
+                    return entry.path("name").asText();
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur récupération nom FR pour ID " + id);
+        }
+        return "Nom indisponible";
+    }
+
+
+    private String recupererDescription(Long id) {
+        try {
+            String speciesUrl = "https://pokeapi.co/api/v2/pokemon-species/" + id;
+            String json = restTemplate.getForObject(speciesUrl, String.class);
+            JsonNode root = mapper.readTree(json);
+            JsonNode flavorEntries = root.path("flavor_text_entries");
+
+            for (JsonNode entry : flavorEntries) {
+                if (entry.path("language").path("name").asText().equals("fr")) {
+                    return entry.path("flavor_text").asText()
+                            .replace("\n", " ")
+                            .replace("\f", " ");
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Pas de description pour ID " + id);
+        }
+        return "Pas de description disponible.";
+    }
+
+    private String capitalize(String str) {
+        if (str == null || str.isEmpty()) return str;
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 }

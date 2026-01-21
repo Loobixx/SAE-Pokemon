@@ -2,36 +2,37 @@ package com.loobix.sae_pokemon.model;
 
 import jakarta.persistence.*;
 
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+
 @Entity
-@Table(name = "pokemon")
+@Table(name = "pokemon", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"numero", "isShiny"})
+})
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Pokemon {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    private Integer numero; // ex: 25
     private String name;
+
     private String type;
+    private boolean isShiny; // ex: true
 
     @Column(length = 2048)
-    private String imageUrl;      // Image Normale
+    private String imageUrl;
 
-    @Column(length = 2048)
-    private String shinyImageUrl; // Image Shiny (NOUVEAU)
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
-    public Pokemon() {}
 
-    // Constructeur mis à jour avec le nouveau champ
-    public Pokemon(Long id, String name, String type, String imageUrl, String shinyImageUrl) {
-        this.id = id;
-        this.name = name;
-        this.type = type;
-        this.imageUrl = imageUrl;
-        this.shinyImageUrl = shinyImageUrl;
-    }
 
-    // --- GETTERS ---
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public String getType() { return type; }
-    public String getImageUrl() { return imageUrl; }
-    public String getShinyImageUrl() { return shinyImageUrl; }
 }
