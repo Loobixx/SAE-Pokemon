@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import PokemonDetailView from '../views/PokemonDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -13,30 +14,32 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
-      meta: { isPublic: true } // On définit que cette page est publique
+      meta: { isPublic: true }
     },
     {
       path: '/register',
       name: 'register',
       component: () => import('../views/RegisterView.vue'),
-      meta: { isPublic: true } // On définit que cette page est publique
+      meta: { isPublic: true }
+    },
+    {
+      path: '/pokemon/:id',
+      name: 'PokemonDetail',
+      component: PokemonDetailView,
+      props: true
     },
   ],
 })
 
-// --- AJOUT DU GARDE BARRIÈRE ---
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token'); // On récupère le token
+  const token = localStorage.getItem('token');
 
-  // Cas 1 : L'utilisateur n'est pas connecté et essaie d'aller sur une page privée (Home)
   if (!to.meta.isPublic && !token) {
     next({ name: 'login' });
   }
-  // Cas 2 : L'utilisateur est DÉJÀ connecté et essaie d'aller sur Login ou Register
   else if (to.meta.isPublic && token) {
-    next({ name: 'home' }); // On le renvoie vers le Pokédex
+    next({ name: 'home' });
   }
-  // Cas 3 : Tout est ok, on laisse passer
   else {
     next();
   }

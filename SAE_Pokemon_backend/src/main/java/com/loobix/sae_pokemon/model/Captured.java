@@ -8,14 +8,26 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
+@Table(name = "captured")
 public class Captured {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private int numero;
-    private int id_game;
-    private boolean is_shiny;
+    @Column(name = "numero")
+    private Integer numero;
 
+    @Column(name = "id_game")
+    private Integer idGame;
+
+    @Column(name = "is_shiny")
+    private Boolean isShiny;
+
+    public Captured(Integer numero, Integer idGame, Boolean isShiny) {
+        this.numero = numero;
+        this.idGame = idGame;
+        this.isShiny = isShiny;
+    }
 }

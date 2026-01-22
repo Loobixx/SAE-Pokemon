@@ -12,11 +12,12 @@
           <v-card-text>
             <v-form @submit.prevent="handleLogin">
               <v-text-field
-                v-model="username"
-                label="Nom d'utilisateur"
-                prepend-inner-icon="mdi-account"
+                v-model="email"
+                label="Email"
+                prepend-inner-icon="mdi-email"
                 variant="outlined"
                 class="mb-2"
+                :rules="[v => !!v || 'L\'email est requis']"
                 required
               ></v-text-field>
 
@@ -28,15 +29,16 @@
                 :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
                 @click:append-inner="showPassword = !showPassword"
                 variant="outlined"
+                :rules="[v => !!v || 'Le mot de passe est requis']"
                 required
               ></v-text-field>
 
               <v-btn
                 type="submit"
-                color="primary"
+                color="deep-purple-darken-1"
                 size="large"
                 block
-                class="mt-4"
+                class="mt-4 text-white"
                 :loading="loading"
               >
                 Se connecter
@@ -47,7 +49,9 @@
           <v-card-actions class="justify-center">
             <p class="text-body-2">
               Pas encore de compte ?
-              <router-link to="/register" class="text-primary font-weight-bold">S'inscrire</router-link>
+              <router-link to="/register" class="text-decoration-none font-weight-bold" style="color: #6b5b95;">
+                S'inscrire
+              </router-link>
             </p>
           </v-card-actions>
 
@@ -56,23 +60,27 @@
           </v-alert>
         </v-card>
       </v-col>
-      </v-row>
+    </v-row>
   </v-container>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-// import { useAuth } from '../composables/useAuth'; // Tu créeras ça plus tard
 
 const router = useRouter();
-const username = ref('');
+const email = ref('');
 const password = ref('');
 const showPassword = ref(false);
 const loading = ref(false);
 const errorMessage = ref('');
 
 const handleLogin = async () => {
+  if (!email.value || !password.value) {
+    errorMessage.value = "Veuillez remplir tous les champs.";
+    return;
+  }
+
   loading.value = true;
   errorMessage.value = '';
 
@@ -81,26 +89,39 @@ const handleLogin = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: username.value,
+        email: email.value,
         password: password.value
       })
     });
 
-    // 1. On vérifie d'abord si la réponse est OK
     if (response.ok) {
       const data = await response.json();
+
+      console.log("Réponse du serveur:", data);
+
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify({ email: data.email, pseudo: data.pseudo }));
+
+      const userToSave = {
+        email: data.email || (data.user && data.user.email),
+        pseudo: data.pseudo || (data.user && data.user.pseudo)
+      };
+
+      if (!userToSave.pseudo) {
+        console.warn("Attention: Le pseudo n'a pas été trouvé dans la réponse du serveur.");
+        userToSave.pseudo = "Dresseur";
+      }
+
+      localStorage.setItem('user', JSON.stringify(userToSave));
+
       router.push('/');
+
     } else {
-      // 2. Si erreur (401, 403...), on essaie de lire le message d'erreur
       const errorData = await response.json().catch(() => ({}));
       errorMessage.value = errorData.message || "Email ou mot de passe incorrect.";
     }
   } catch (error) {
-    // 3. Ici, c'est une vraie erreur réseau (serveur éteint, pas de réseau)
     console.error("Erreur login:", error);
-    errorMessage.value = "Connexion impossible : le serveur ne répond pas.";
+    errorMessage.value = "Connexion impossible : vérifiez que le serveur Spring Boot est lancé.";
   } finally {
     loading.value = false;
   }
@@ -109,7 +130,7 @@ const handleLogin = async () => {
 
 <style scoped>
 .login-bg {
-  /* On garde le même fond que ton Pokédex pour la cohérence */
-  background-color: #f5f5f5;
+  background-color: #2c3e50;
+  color: white;
 }
 </style>

@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,7 +16,18 @@ public class Wished {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "numero")
     private Integer numero;
-    private Integer id_game;
-    private boolean is_shiny;
+
+    @Column(name = "id_game")
+    private Integer idGame;
+
+    @Column(name = "is_shiny")
+    private Boolean isShiny;
+
+    public Wished(Integer numero, Integer idGame, Boolean isShiny) {
+        this.numero = numero;
+        this.idGame = idGame;
+        this.isShiny = isShiny;
+    }
 }
