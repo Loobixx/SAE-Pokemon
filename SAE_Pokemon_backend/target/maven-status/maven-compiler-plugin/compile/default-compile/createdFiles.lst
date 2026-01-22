@@ -1,6 +1,0 @@
-com\loobix\sae_pokemon\controller\PokemonController.class
-com\loobix\sae_pokemon\model\Pokemon.class
-com\loobix\sae_pokemon\config\DataInitializer.class
-com\loobix\sae_pokemon\config\DataInitializer$PokemonDetails.class
-com\loobix\sae_pokemon\repository\PokemonRepository.class
-com\loobix\sae_pokemon\SaePokemonApplication.class
