@@ -1,51 +1,137 @@
 <script setup>
-import { useSettings } from '../composables/useSettings';
+import { ref, onMounted } from 'vue';
+import { useSettings } from '../composables/useSettings.js';
+const props = defineProps({ isOpen: Boolean });
+const GEN_LIMITS = {
+  1: 151,  // Gen 1
+  2: 251,  // Gen 2
+  3: 386,  // Gen 3
+  4: 493,  // Gen 4
+  5: 649,  // Gen 5
+  6: 721,  // Gen 6
+  7: 809,  // Gen 7
+  8: 905,  // Gen 8
+  9: 1025  // Gen 9
+};
 
+const emit = defineEmits(['close']);
 const { settings } = useSettings();
-defineEmits(['close']);
+
+const games = ref([]);
+const loading = ref(true);
+
+// Variable locale pour le formulaire
+const selectedGame = ref(settings.value.activeGameId || null);
+
+const fetchGames = async () => {
+  try {
+    const token = localStorage.getItem('token');
+
+
+    const response = await fetch('http://localhost:8080/api/game/list', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      games.value = await response.json();
+    }
+  } catch (e) {
+    console.error("Erreur chargement jeux", e);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// --- FORMATAGE ---
+const formatGameName = (game) => {
+  if (!game) return '';
+  const region = game.regionName ? game.regionName.charAt(0).toUpperCase() + game.regionName.slice(1) : '???';
+  const gen = game.name.replace('generation-', '').toUpperCase();
+  return `Génération ${gen} : ${region}`;
+};
+
+const saveSettings = () => {
+  if (selectedGame.value) {
+    settings.value.activeGameId = selectedGame.value;
+
+    const limit = GEN_LIMITS[selectedGame.value] || 1025;
+    settings.value.maxId = limit;
+  }
+  emit('close');
+};
+
+onMounted(() => {
+  fetchGames();
+});
 </script>
 
 <template>
-  <div class="modal-overlay" @click.self="$emit('close')">
-    <div class="settings-box">
-      <button class="close-modal" @click="$emit('close')">✖</button>
-      <h2>⚙️ Paramètres</h2>
-      <hr>
+  <v-dialog
+    :model-value="isOpen"
+    persistent
+    max-width="500"
+    @update:model-value="val => !val && emit('close')"
+  >
+    <v-card rounded="xl" elevation="4">
+      <v-toolbar color="primary" density="compact">
+        <v-toolbar-title class="text-h6 font-weight-bold ml-4">
+          <v-icon start icon="mdi-cog" size="small" class="mr-2"></v-icon>
+          Paramètres
+        </v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-btn icon="mdi-close" variant="text" @click="emit('close')"></v-btn>
+      </v-toolbar>
 
-      <div class="form-group">
-        <label>Limite Pokédex :</label>
-        <select v-model="settings.maxId">
-          <option :value="151">Gen 1 : Kanto (1-151)</option>
-          <option :value="251">Gen 2 : Johto (1-251)</option>
-          <option :value="386">Gen 3 : Hoenn (1-386)</option>
-          <option :value="493">Gen 4 : Sinnoh (1-493)</option>
-          <option :value="1025">Tout afficher</option>
-        </select>
-      </div>
+      <v-card-text class="pt-6 pb-4">
+        <p class="text-body-2 text-grey-darken-1 mb-4">
+          Choisissez la génération de référence pour votre Pokédex.
+        </p>
 
-      <div class="form-group">
-        <label>Volume : {{ settings.volume }}%</label>
-        <input type="range" v-model="settings.volume" min="0" max="100">
-      </div>
+        <v-select
+          v-model="selectedGame"
+          :items="games"
+          :loading="loading"
+          item-title="formattedName"
+          item-value="id"
+          label="Version du jeu"
+          variant="outlined"
+          density="comfortable"
+          color="primary"
+          bg-color="grey-lighten-5"
+          prepend-inner-icon="mdi-controller"
+        >
+          <template v-slot:item="{ props, item }">
+            <v-list-item v-bind="props" :title="formatGameName(item.raw)" subtitle="Version officielle"></v-list-item>
+          </template>
 
-      <button class="save-btn" @click="$emit('close')">💾 Fermer</button>
-    </div>
-  </div>
+          <template v-slot:selection="{ item }">
+            <span class="font-weight-medium text-primary-darken-1">
+              {{ formatGameName(item.raw) }}
+            </span>
+          </template>
+        </v-select>
+      </v-card-text>
+
+      <v-divider></v-divider>
+
+      <v-card-actions class="pa-4 bg-grey-lighten-5">
+        <v-spacer></v-spacer>
+        <v-btn variant="text" color="grey-darken-1" @click="emit('close')">
+          Annuler
+        </v-btn>
+        <v-btn
+          color="primary"
+          variant="flat"
+          class="px-6"
+          rounded="pill"
+          @click="saveSettings"
+        >
+          Valider
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
-
-<style scoped>
-.modal-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px);
-  display: flex; justify-content: center; align-items: center; z-index: 1000;
-}
-.settings-box {
-  background: white; width: 90%; max-width: 450px; padding: 30px;
-  border-radius: 20px; text-align: left; position: relative;
-}
-.close-modal { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; background:none; border:none;}
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #333;}
-.form-group select, .form-group input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
-.save-btn { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; }
-</style>

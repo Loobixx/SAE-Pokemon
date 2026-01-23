@@ -3,8 +3,11 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import NavBar from '../components/NavBar.vue';
 import { usePokemon } from '../composables/UsePokemon.js';
+import { useNotify } from '../composables/useNotify.js';
+import SettingsModal from '@/components/SettingsModal.vue'
 
 // --- INITIALISATION ---
+const notify = useNotify();
 const route = useRoute();
 const router = useRouter();
 const { pokemons, fetchPokemons } = usePokemon();
@@ -98,25 +101,25 @@ const toggleCaught = async () => {
     });
 
     if (response.ok) {
-      // Message adapté
       const msg = isAlready
         ? `${pokemon.value.name} a été relâché...`
         : `Bravo ! ${pokemon.value.name} a été capturé !`;
 
-      // On utilise un petit toast ou juste on rafraichit (ici alert simple)
-      // alert(msg); // Optionnel, peut être énervant à la longue
+      notify.showSuccess(msg);
+
       await fetchUserLists();
     } else {
-      alert("Erreur : " + await response.text());
+      notify.showError("Erreur : " + await response.text());
     }
-  } catch (e) { console.error(e); }
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 const toggleWish = async () => {
   const token = localStorage.getItem('token');
   if (!token) return router.push('/login');
 
-  // Si on l'a déjà capturé, on ne touche à rien (règle métier)
   if (checkCaptured(isShiny.value)) {
     return alert("Impossible : Vous l'avez déjà capturé ! Relâchez-le d'abord.");
   }
@@ -150,7 +153,7 @@ onMounted(() => {
   <v-app>
     <NavBar currentTab="pokedex" @update:currentTab="handleTabNavigation" />
 
-    <v-main class="bg-grey-lighten-4">
+    <v-main class="bg-grey-lighten-4 pt-16">
       <v-container v-if="loading" class="text-center mt-12">
         <v-progress-circular indeterminate color="primary"></v-progress-circular>
       </v-container>
@@ -260,10 +263,13 @@ onMounted(() => {
       </v-container>
     </v-main>
   </v-app>
+  <SettingsModal
+    :is-open="isSettingsOpen"
+    @close="isSettingsOpen = false"
+  />
 </template>
 
 <style scoped>
-/* Copie exacte de votre style précédent */
 .detail-indicators { position: absolute; top: 0; left: 0; z-index: 10; margin: 8px; }
 .icon-wrapper { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 20px; min-height: 20px; }
 .sub-icon-badge { position: absolute; bottom: -4px; right: -4px; z-index: 11; display: flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }

@@ -4,9 +4,11 @@ import java.util.List;
 import com.loobix.sae_pokemon.dto.CaptureRequest;
 import com.loobix.sae_pokemon.dto.WishRequest;
 import com.loobix.sae_pokemon.model.Captured;
+import com.loobix.sae_pokemon.model.Games;
 import com.loobix.sae_pokemon.model.User;
 import com.loobix.sae_pokemon.model.Wished;
 import com.loobix.sae_pokemon.repository.CapturedRepository;
+import com.loobix.sae_pokemon.repository.GamesRepository;
 import com.loobix.sae_pokemon.repository.WishedRepository;
 import com.loobix.sae_pokemon.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,31 +32,39 @@ public class GameController {
     WishedRepository wishedRepository;
 
     @PostMapping("/capture")
-    @Transactional // Important pour autoriser la suppression
+    @Transactional
     public ResponseEntity<?> capturePokemon(@RequestBody CaptureRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userRepository.findById(authentication.getName()).orElse(null);
 
         if (user == null || user.getLastGame() == 0) return ResponseEntity.badRequest().build();
 
-        // 1. On vérifie si on l'a déjà (Logique existante)
-        boolean alreadyCaught = capturedRepository.existsByIdGameAndNumeroAndIsShiny(
-                user.getLastGame(), request.getNumero(), request.getIsShiny()
+        // 1. VERIFICATION (Avec User ID)
+        boolean alreadyCaught = capturedRepository.existsByIdGameAndNumeroAndIsShinyAndUserId(
+                user.getLastGame(),
+                request.getNumero(),
+                request.getIsShiny(),
+                authentication.getName() // On vérifie pour CET utilisateur
         );
 
         if (alreadyCaught) {
             return ResponseEntity.badRequest().body("Déjà attrapé !");
         }
 
-        // 2. On Sauvegarde la capture (Logique existante)
-        Captured captured = new Captured(request.getNumero(), user.getLastGame(), request.getIsShiny());
+        // 2. SAUVEGARDE (Avec User ID)
+        Captured captured = new Captured(
+                request.getNumero(),
+                user.getLastGame(),
+                request.getIsShiny(),
+                authentication.getName() // On enregistre le propriétaire
+        );
         capturedRepository.save(captured);
 
-        // --- NETTOYAGE DES SOUHAITS ---
-        List<Wished> wishes = wishedRepository.findByIdGame(user.getLastGame());
+        // 3. NETTOYAGE DES SOUHAITS (Uniquement ceux de l'utilisateur)
+        // On récupère uniquement les vœux de CE joueur
+        List<Wished> wishes = wishedRepository.findByIdGameAndUserId(user.getLastGame(), authentication.getName());
+
         for (Wished w : wishes) {
-            // CORRECTION ICI : On vérifie le numéro ET le shiny
-            // On utilise "booleanValue()" ou une comparaison directe si c'est des types primitifs
             boolean memeNumero = w.getNumero().equals(request.getNumero());
             boolean memeShiny = (w.getIsShiny() == request.getIsShiny());
 
@@ -69,19 +79,20 @@ public class GameController {
     @GetMapping("/captured")
     public ResponseEntity<?> getCapturedPokemon() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        User user = userRepository.findById(email).orElse(null);
+        User user = userRepository.findById(authentication.getName()).orElse(null);
 
         if (user == null || user.getLastGame() == null || user.getLastGame() == 0) {
-            return ResponseEntity.ok(List.of()); // Retourne une liste vide si pas de partie
+            return ResponseEntity.ok(List.of());
         }
 
-        // 2. Récupération de la liste via le Repository
-        List<Captured> capturedList = capturedRepository.findByIdGame(user.getLastGame());
+        // Récupération filtrée par USER ID
+        List<Captured> capturedList = capturedRepository.findByIdGameAndUserId(
+                user.getLastGame(),
+                authentication.getName()
+        );
 
         return ResponseEntity.ok(capturedList);
     }
-
 
     @PostMapping("/wish")
     public ResponseEntity<?> wishPokemon(@RequestBody WishRequest request) {
@@ -92,15 +103,18 @@ public class GameController {
             return ResponseEntity.badRequest().body("Erreur: Pas de partie en cours.");
         }
 
-        // 1. D'ABORD : Vérifier si on l'a déjà CAPTURÉ (dans la même version)
-        boolean alreadyCaught = capturedRepository.existsByIdGameAndNumeroAndIsShiny(
-                user.getLastGame(), request.getNumero(), request.getIsShiny()
+        // 1. Vérifier si DÉJÀ CAPTURÉ par l'utilisateur
+        boolean alreadyCaught = capturedRepository.existsByIdGameAndNumeroAndIsShinyAndUserId(
+                user.getLastGame(), request.getNumero(), request.getIsShiny(), authentication.getName()
         );
         if (alreadyCaught) {
             return ResponseEntity.badRequest().body("Inutile de le souhaiter, vous l'avez déjà attrapé !");
         }
 
-        List<Wished> wishes = wishedRepository.findByIdGame(user.getLastGame());
+        // 2. Vérifier si DÉJÀ SOUHAITÉ par l'utilisateur
+        // On peut utiliser une méthode exists...AndUserId dans le repo pour faire plus propre,
+        // ou filtrer la liste comme ici :
+        List<Wished> wishes = wishedRepository.findByIdGameAndUserId(user.getLastGame(), authentication.getName());
         boolean alreadyWished = wishes.stream().anyMatch(w ->
                 w.getNumero().equals(request.getNumero()) && w.getIsShiny() == request.getIsShiny()
         );
@@ -109,11 +123,12 @@ public class GameController {
             return ResponseEntity.badRequest().body("Ce Pokémon est déjà dans votre liste de souhaits !");
         }
 
-        // 3. Sauvegarder
+        // 3. SAUVEGARDE (Avec User ID)
         Wished newWish = new Wished(
                 request.getNumero(),
                 user.getLastGame(),
-                request.getIsShiny()
+                request.getIsShiny(),
+                authentication.getName() // Ajout du propriétaire
         );
 
         wishedRepository.save(newWish);
@@ -124,15 +139,17 @@ public class GameController {
     @GetMapping("/wished")
     public ResponseEntity<?> getWishedPokemon() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        User user = userRepository.findById(email).orElse(null);
+        User user = userRepository.findById(authentication.getName()).orElse(null);
 
         if (user == null || user.getLastGame() == null || user.getLastGame() == 0) {
-            return ResponseEntity.ok(List.of()); // Retourne une liste vide si pas de partie
+            return ResponseEntity.ok(List.of());
         }
 
-        // 2. Récupération de la liste via le Repository
-        List<Wished> wishedList = wishedRepository.findByIdGame(user.getLastGame());
+        // Récupération filtrée par USER ID
+        List<Wished> wishedList = wishedRepository.findByIdGameAndUserId(
+                user.getLastGame(),
+                authentication.getName()
+        );
 
         return ResponseEntity.ok(wishedList);
     }
@@ -144,8 +161,12 @@ public class GameController {
         User user = userRepository.findById(authentication.getName()).orElse(null);
         if (user == null || user.getLastGame() == 0) return ResponseEntity.badRequest().build();
 
-        capturedRepository.deleteByIdGameAndNumeroAndIsShiny(
-                user.getLastGame(), request.getNumero(), request.getIsShiny()
+        // SUPPRESSION CIBLÉE (Génération + Numéro + Shiny + USER)
+        capturedRepository.deleteByIdGameAndNumeroAndIsShinyAndUserId(
+                user.getLastGame(),
+                request.getNumero(),
+                request.getIsShiny(),
+                authentication.getName()
         );
 
         return ResponseEntity.ok("Pokémon relâché !");
@@ -158,10 +179,23 @@ public class GameController {
         User user = userRepository.findById(authentication.getName()).orElse(null);
         if (user == null || user.getLastGame() == 0) return ResponseEntity.badRequest().build();
 
-        wishedRepository.deleteByIdGameAndNumeroAndIsShiny(
-                user.getLastGame(), request.getNumero(), request.getIsShiny()
+        // SUPPRESSION CIBLÉE (Génération + Numéro + Shiny + USER)
+        wishedRepository.deleteByIdGameAndNumeroAndIsShinyAndUserId(
+                user.getLastGame(),
+                request.getNumero(),
+                request.getIsShiny(),
+                authentication.getName()
         );
 
         return ResponseEntity.ok("Retiré des souhaits !");
+    }
+
+
+    @Autowired
+    private GamesRepository gameRepository;
+
+    @GetMapping("/list")
+    public ResponseEntity<List<Games>> getAllGames() {
+        return ResponseEntity.ok(gameRepository.findAll());
     }
 }

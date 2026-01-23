@@ -11,7 +11,10 @@ public interface CapturedRepository extends JpaRepository<Captured, Long> {
 
     boolean existsByIdGameAndNumeroAndIsShiny(Integer idGame, Integer numero, Boolean isShiny);
 
+    boolean existsByIdGameAndNumeroAndIsShinyAndUserId(Integer idGame, Integer numero, Boolean isShiny, String userId);
+
     boolean existsByIdGameAndNumero(Integer idGame, Integer numero);
 
-    void deleteByIdGameAndNumeroAndIsShiny(Integer idGame, Integer numero, Boolean isShiny);
-}
+    List<Captured> findByIdGameAndUserId(Integer idGame, String userId);
+
+    void deleteByIdGameAndNumeroAndIsShinyAndUserId(Integer idGame, Integer numero, Boolean isShiny, String userId);}

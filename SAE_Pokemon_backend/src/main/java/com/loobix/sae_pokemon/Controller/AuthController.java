@@ -51,7 +51,7 @@ public class AuthController {
 
         // Valeurs par défaut
         user.setVolume(50);
-        user.setLastGame(0);
+        user.setLastGame(1);
 
         // 3. SAUVEGARDE RÉELLE DANS POSTGRES
         userRepository.save(user);

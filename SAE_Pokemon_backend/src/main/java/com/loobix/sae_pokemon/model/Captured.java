@@ -25,9 +25,13 @@ public class Captured {
     @Column(name = "is_shiny")
     private Boolean isShiny;
 
-    public Captured(Integer numero, Integer idGame, Boolean isShiny) {
+    @Column(name = "user_id")
+    private String userId;
+
+    public Captured(Integer numero, Integer idGame, Boolean isShiny, String userId) {
         this.numero = numero;
         this.idGame = idGame;
         this.isShiny = isShiny;
+        this.userId = userId;
     }
 }
