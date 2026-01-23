@@ -22,14 +22,24 @@ const page = ref(1);
 const itemsPerPage = 50;
 
 const searchQuery = ref('');
+const searchInput = ref('');
 
-// --- GESTION DU MENU UNIQUE  ---
+const triggerSearch = () => {
+  searchQuery.value = searchInput.value;
+  page.value = 1;
+};
+
+const clearSearch = () => {
+  searchInput.value = '';
+  searchQuery.value = '';
+  page.value = 1;
+};
+
 const activeMenuId = ref(null);
 
 const handleMenuOpened = (id) => {
   activeMenuId.value = id;
 };
-// ----------------------------------------------------
 
 const capturedList = ref([]);
 const wishedList = ref([]);
@@ -135,7 +145,7 @@ const fetchWishedList = async () => {
 };
 
 watch(page, () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
-watch(currentTab, () => { page.value = 1; searchQuery.value = '';});
+watch(currentTab, () => { page.value = 1; searchQuery.value = '';searchInput.value = '';});
 
 onMounted(() => {
   fetchPokemons();
@@ -157,14 +167,16 @@ onMounted(() => {
         <v-row align="center" class="mb-6">
           <v-col cols="12" md="3">
             <v-text-field
-              v-model="searchQuery"
+              v-model="searchInput"
               label="Rechercher un Pokémon (nom ou n°)..."
               prepend-inner-icon="mdi-magnify"
               variant="solo"
               clearable
               rounded
               hide-details
-              @click:clear="searchQuery = ''"
+              @keydown.enter="triggerSearch"
+              @click:prepend-inner="triggerSearch"
+              @click:clear="clearSearch"
             ></v-text-field>
           </v-col>
 

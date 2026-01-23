@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { usePokemon } from '../UsePokemon.js';
 
-// On simule une donnée brute de l'API
 const mockRawData = [
   { numero: 1, name: 'Bulbizarre', imageUrl: 'url1', isShiny: false },
   { numero: 1, name: 'Bulbizarre', imageUrl: 'url2', isShiny: true }
