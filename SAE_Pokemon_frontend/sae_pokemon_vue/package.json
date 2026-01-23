@@ -11,7 +11,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --fix --cache",
-    "format": "prettier --write --experimental-cli src/"
+    "format": "prettier --write --experimental-cli src/",
+    "test": "vitest"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
@@ -28,8 +29,10 @@
     "eslint": "^9.39.2",
     "eslint-plugin-vue": "~10.6.2",
     "globals": "^17.0.0",
+    "jsdom": "^27.4.0",
     "prettier": "3.7.4",
     "vite": "beta",
-    "vite-plugin-vue-devtools": "^8.0.5"
+    "vite-plugin-vue-devtools": "^8.0.5",
+    "vitest": "^4.0.18"
   }
 }
