@@ -1,6 +1,7 @@
 package com.loobix.sae_pokemon.config;
 
 import com.loobix.sae_pokemon.model.User;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
@@ -9,6 +10,7 @@ import java.util.List;
 public class UserDetailsImpl implements UserDetails {
     private String email;
     private String password;
+    @Getter
     private String pseudo;
 
     public UserDetailsImpl(String email, String password, String pseudo) {
@@ -29,14 +31,11 @@ public class UserDetailsImpl implements UserDetails {
         return List.of();
     }
 
-    public String getPseudo() { return pseudo; }
-
     @Override
     public String getPassword() { return password; }
 
     @Override
     public String getUsername() { return email; }
-
     @Override
     public boolean isAccountNonExpired() { return true; }
 
