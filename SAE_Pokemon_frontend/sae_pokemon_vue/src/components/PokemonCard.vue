@@ -22,7 +22,6 @@ const emit = defineEmits(['update-lists', 'menu-opened']);
 
 const router = useRouter();
 
-// --- GESTION DU MENU ---
 const showMenu = ref(false);
 const menuX = ref(0);
 const menuY = ref(0);
@@ -48,7 +47,6 @@ watch(() => props.activeMenuId, (newId) => {
 });
 
 
-// --- LOGIQUE API ---
 const toggleAction = async (type) => {
   const token = localStorage.getItem('token');
   if (!token) return alert("Connectez-vous pour gérer votre collection !");
@@ -80,16 +78,13 @@ const toggleAction = async (type) => {
       emit('update-lists');
       notify.showSuccess("Collection mise à jour !");
     } else {
-      // Erreur API
       notify.showError("Erreur lors de la mise à jour.");
     }
   } catch (e) {
-    // Erreur réseau
     notify.showError("Erreur de connexion.");
   }
 };
 
-// --- LOGIQUE VISUELLE ---
 const currentStatus = computed(() => {
   const isShiny = props.pokemon.showingShiny;
   if (isShiny ? props.isCaughtShiny : props.isCaughtNormal) return 'caught';

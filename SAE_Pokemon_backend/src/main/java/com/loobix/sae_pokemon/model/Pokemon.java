@@ -21,11 +21,11 @@ public class Pokemon {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Integer numero; // ex: 25
+    private Integer numero;
     private String name;
 
     private String type;
-    private boolean isShiny; // ex: true
+    private boolean isShiny;
 
     @Column(length = 2048)
     private String imageUrl;

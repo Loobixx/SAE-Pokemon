@@ -6,7 +6,6 @@ import { usePokemon } from '../composables/UsePokemon.js';
 import { useNotify } from '../composables/useNotify.js';
 import SettingsModal from '@/components/SettingsModal.vue'
 
-// --- INITIALISATION ---
 const notify = useNotify();
 const route = useRoute();
 const router = useRouter();
@@ -56,7 +55,6 @@ const currentImage = computed(() => {
     : (pokemon.value.normalUrl || '');
 });
 
-// Helpers
 const checkCaptured = (shiny) => {
   if (!pokemon.value) return false;
   return capturedList.value.some(c => c.numero === pokemon.value.numero && c.isShiny === shiny);
@@ -66,7 +64,6 @@ const checkWished = (shiny) => {
   return wishedList.value.some(c => c.numero === pokemon.value.numero && c.isShiny === shiny);
 };
 
-// Configs Icones
 const mainConfig = computed(() => {
   const shiny = isShiny.value;
   if (checkCaptured(shiny)) return { show: true, color: shiny ? 'amber-darken-1' : 'green', icon: 'mdi-pokeball', tooltip: 'Capturé !' };
@@ -81,15 +78,11 @@ const badgeConfig = computed(() => {
   return { show: false };
 });
 
-
-// --- ACTIONS INTELLIGENTES (TOGGLE) ---
-
 const toggleCaught = async () => {
   const token = localStorage.getItem('token');
   if (!token) return router.push('/login');
 
   const isAlready = checkCaptured(isShiny.value);
-  // Si déjà attrapé -> DELETE. Sinon -> POST.
   const method = isAlready ? 'DELETE' : 'POST';
   const url = 'http://localhost:8080/api/game/capture';
 

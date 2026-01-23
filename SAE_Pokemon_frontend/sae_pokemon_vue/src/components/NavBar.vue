@@ -116,7 +116,6 @@ const handleLogout = () => {
   display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
 }
 
-/* Style de la carte menu pour qu'elle ressemble à l'ancienne */
 .dropdown-card-vuetify {
   box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
   border: none !important;

@@ -7,13 +7,8 @@ import java.util.List;
 
 @Repository
 public interface CapturedRepository extends JpaRepository<Captured, Long> {
-    List<Captured> findByIdGame(Integer idGame);
-
-    boolean existsByIdGameAndNumeroAndIsShiny(Integer idGame, Integer numero, Boolean isShiny);
 
     boolean existsByIdGameAndNumeroAndIsShinyAndUserId(Integer idGame, Integer numero, Boolean isShiny, String userId);
-
-    boolean existsByIdGameAndNumero(Integer idGame, Integer numero);
 
     List<Captured> findByIdGameAndUserId(Integer idGame, String userId);
 

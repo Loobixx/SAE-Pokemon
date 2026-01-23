@@ -8,7 +8,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/pokemons")
-@CrossOrigin(origins = "*") // Autorise ton fichier HTML local à accéder au serveur
+@CrossOrigin(origins = "*")
 public class PokemonController {
 
     private final PokemonRepository repository;

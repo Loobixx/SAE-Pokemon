@@ -3,15 +3,15 @@ import { ref, onMounted } from 'vue';
 import { useSettings } from '../composables/useSettings.js';
 const props = defineProps({ isOpen: Boolean });
 const GEN_LIMITS = {
-  1: 151,  // Gen 1
-  2: 251,  // Gen 2
-  3: 386,  // Gen 3
-  4: 493,  // Gen 4
-  5: 649,  // Gen 5
-  6: 721,  // Gen 6
-  7: 809,  // Gen 7
-  8: 905,  // Gen 8
-  9: 1025  // Gen 9
+  1: 151,
+  2: 251,
+  3: 386,
+  4: 493,
+  5: 649,
+  6: 721,
+  7: 809,
+  8: 905,
+  9: 1025
 };
 
 const emit = defineEmits(['close']);
@@ -20,7 +20,6 @@ const { settings } = useSettings();
 const games = ref([]);
 const loading = ref(true);
 
-// Variable locale pour le formulaire
 const selectedGame = ref(settings.value.activeGameId || null);
 
 const fetchGames = async () => {
@@ -45,7 +44,6 @@ const fetchGames = async () => {
   }
 };
 
-// --- FORMATAGE ---
 const formatGameName = (game) => {
   if (!game) return '';
   const region = game.regionName ? game.regionName.charAt(0).toUpperCase() + game.regionName.slice(1) : '???';

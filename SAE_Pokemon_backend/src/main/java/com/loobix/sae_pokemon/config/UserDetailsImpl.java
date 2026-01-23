@@ -26,7 +26,7 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(); // Tu pourras ajouter des rôles ici plus tard
+        return List.of();
     }
 
     public String getPseudo() { return pseudo; }
@@ -35,7 +35,7 @@ public class UserDetailsImpl implements UserDetails {
     public String getPassword() { return password; }
 
     @Override
-    public String getUsername() { return email; } // L'email sert d'identifiant
+    public String getUsername() { return email; }
 
     @Override
     public boolean isAccountNonExpired() { return true; }

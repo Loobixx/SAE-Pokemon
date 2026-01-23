@@ -21,11 +21,13 @@ const isSettingsOpen = ref(false);
 const page = ref(1);
 const itemsPerPage = 50;
 
-// --- GESTION DU MENU UNIQUE (Le Chef d'Orchestre) ---
+const searchQuery = ref('');
+
+// --- GESTION DU MENU UNIQUE  ---
 const activeMenuId = ref(null);
 
 const handleMenuOpened = (id) => {
-  activeMenuId.value = id; // On note qui est ouvert
+  activeMenuId.value = id;
 };
 // ----------------------------------------------------
 
@@ -54,17 +56,20 @@ const pageTitle = computed(() => {
 });
 
 const baseFilteredPokemons = computed(() => {
+  let list = [];
+
+  // Logique existante pour choisir la base de la liste
   if (!pokemons.value.length) return [];
 
   if (currentTab.value === 'caught') {
-    return capturedList.value.map(capture => {
+    list = capturedList.value.map(capture => {
       const staticData = pokemons.value.find(p => p.numero === capture.numero);
       if (!staticData) return null;
       return { ...staticData, showingShiny: capture.isShiny };
     }).filter(p => p !== null);
   }
   else if (currentTab.value === 'wish') {
-    return wishedList.value
+    list = wishedList.value
       .filter(wish => {
         const alreadyCaught = capturedList.value.some(cap =>
           cap.numero === wish.numero && cap.isShiny === wish.isShiny
@@ -77,14 +82,24 @@ const baseFilteredPokemons = computed(() => {
         return { ...staticData, showingShiny: wish.isShiny };
       }).filter(p => p !== null);
   }
-
-  // --- C'EST ICI QUE CELA BLOQUAIT ---
-  if (currentTab.value === 'pokedex') {
-    // On ajoute .value ici !
-    return pokemons.value.filter(p => p.numero <= settings.value.maxId);
+  else {
+    list = pokemons.value.filter(p => p.numero <= settings.value.maxId);
   }
 
-  return pokemons.value;
+  // --- NOUVEAU : Appliquer le filtre de recherche ---
+  if (searchQuery.value.trim() !== '') {
+    const query = searchQuery.value.toLowerCase().trim();
+    list = list.filter(p => {
+      // Sécurité : on vérifie que p et p.nom existent pour éviter l'erreur "undefined"
+      const nomPokemon = (p && p.name) ? p.name.toLowerCase() : '';
+      const numeroPokemon = (p && p.numero) ? p.numero.toString() : '';
+
+      // Utilisation de startsWith pour filtrer par le début du nom ou du numéro
+      return nomPokemon.startsWith(query) || numeroPokemon.startsWith(query);
+    });
+  }
+
+  return list;
 });
 
 const pageCount = computed(() => {
@@ -120,7 +135,7 @@ const fetchWishedList = async () => {
 };
 
 watch(page, () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
-watch(currentTab, () => { page.value = 1; });
+watch(currentTab, () => { page.value = 1; searchQuery.value = '';});
 
 onMounted(() => {
   fetchPokemons();
@@ -139,8 +154,21 @@ onMounted(() => {
 
     <v-main class="bg-grey-lighten-4" style="padding-top: 100px !important;">
       <v-container fluid class="py-8">
-        <v-row justify="center" class="mb-6">
-          <v-col cols="12" class="text-center">
+        <v-row align="center" class="mb-6">
+          <v-col cols="12" md="3">
+            <v-text-field
+              v-model="searchQuery"
+              label="Rechercher un Pokémon (nom ou n°)..."
+              prepend-inner-icon="mdi-magnify"
+              variant="solo"
+              clearable
+              rounded
+              hide-details
+              @click:clear="searchQuery = ''"
+            ></v-text-field>
+          </v-col>
+
+          <v-col cols="12" md="6" class="text-center">
             <h1 class="text-h3 font-weight-bold mb-2 text-primary-dark">{{ pageTitle }}</h1>
             <p class="text-subtitle-1 text-grey-darken-1">
               {{ baseFilteredPokemons.length }} Pokémon(s)
@@ -150,6 +178,8 @@ onMounted(() => {
               <v-icon icon="mdi-pokeball" color="red" size="40"></v-icon>
             </div>
           </v-col>
+
+          <v-col cols="12" md="3" class="d-none d-md-flex"></v-col>
         </v-row>
 
         <v-row v-if="loading" justify="center" class="mt-12">
@@ -167,8 +197,10 @@ onMounted(() => {
 
         <v-row v-else-if="baseFilteredPokemons.length === 0" justify="center" class="mt-10">
           <v-col cols="12" class="text-center empty-state">
-            <v-icon icon="mdi-pokeball" size="100" color="grey-lighten-2"></v-icon>
-            <h3 class="text-h5 text-grey mt-4">{{ currentTab === 'wish' ? 'Tous vos vœux sont exaucés !' : 'Aucun Pokémon ici.' }}</h3>
+            <v-icon icon="mdi-magnify-close" size="100" color="grey-lighten-2"></v-icon>
+            <h3 class="text-h5 text-grey mt-4">
+              {{ searchQuery ? `Aucun résultat pour "${searchQuery}"` : 'Aucun Pokémon ici.' }}
+            </h3>
           </v-col>
         </v-row>
 

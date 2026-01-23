@@ -32,7 +32,6 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void importerLesDoublons() {
-        // On commence par la première page (20 par défaut, ou plus si tu veux)
         String nextUrl = "https://pokeapi.co/api/v2/pokemon?limit=100";
 
         try {
@@ -41,17 +40,14 @@ public class DataInitializer implements CommandLineRunner {
                 String jsonResponse = restTemplate.getForObject(nextUrl, String.class);
                 JsonNode root = mapper.readTree(jsonResponse);
 
-                // On met à jour l'URL de la page suivante pour la prochaine itération
                 nextUrl = root.path("next").asText();
 
                 JsonNode results = root.path("results");
                 for (JsonNode node : results) {
                     String urlDetail = node.path("url").asText();
 
-                    // Ton code de traitement reste le même
                     PokemonDetails details = recupererDetails(urlDetail);
 
-                    // On ignore les formes spéciales (ID > 10000) si tu ne veux que les vrais Pokémon
                     if (details.id > 10000) continue;
 
                     String description = recupererDescription(details.id);
@@ -89,7 +85,6 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    // --- CLASSES ET MÉTHODES UTILITAIRES ---
 
     private record PokemonDetails(Long id, String type, String imageNormal, String imageShiny) {}
 
@@ -100,10 +95,8 @@ public class DataInitializer implements CommandLineRunner {
 
             Long id = root.path("id").asLong();
 
-            // Récupération du premier type
             String type = root.path("types").get(0).path("type").path("name").asText();
 
-            // Images Officielles
             String normal = root.path("sprites").path("other").path("official-artwork").path("front_default").asText();
             String shiny = root.path("sprites").path("other").path("official-artwork").path("front_shiny").asText();
 
@@ -154,10 +147,5 @@ public class DataInitializer implements CommandLineRunner {
             System.err.println("Pas de description pour ID " + id);
         }
         return "Pas de description disponible.";
-    }
-
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) return str;
-        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 }

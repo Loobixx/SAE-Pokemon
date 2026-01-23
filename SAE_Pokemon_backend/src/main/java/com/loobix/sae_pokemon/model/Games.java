@@ -13,13 +13,11 @@ import lombok.NoArgsConstructor;
 public class Games {
 
     @Id
-    // On n'utilise pas @GeneratedValue car on veut utiliser les IDs officiels de l'API (1, 2, 3...)
     private Integer id;
 
     @Column(name = "name")
-    private String name; // ex: "generation-i", "generation-ii"
+    private String name;
 
-    // On ajoute un champ "region" pour faire joli plus tard (Kanto, Johto...)
     @Column(name = "region_name")
     private String regionName;
 }
