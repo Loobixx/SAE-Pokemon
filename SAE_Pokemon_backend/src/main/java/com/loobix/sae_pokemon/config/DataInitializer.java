@@ -4,6 +4,7 @@ import com.loobix.sae_pokemon.model.Pokemon;
 import com.loobix.sae_pokemon.repository.PokemonRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.Resources;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;

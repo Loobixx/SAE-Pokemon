@@ -36,7 +36,7 @@ public class AuthController {
     JwtUtils jwtUtils;
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody SignupRequest signUpRequest) {
+    public ResponseEntity<String> registerUser(@RequestBody SignupRequest signUpRequest) {
         if (userRepository.existsById(signUpRequest.getEmail())) {
             return ResponseEntity.badRequest().body("Erreur: Email déjà utilisé !");
         }
@@ -55,7 +55,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<JwtResponse> authenticateUser(@RequestBody LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
